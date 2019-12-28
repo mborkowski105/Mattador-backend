@@ -1,0 +1,15 @@
+# Read about fixtures at https://api.rubyonrails.org/classes/ActiveRecord/FixtureSet.html
+
+one:
+  twitter_id: 1
+  twitter_id_str: MyString
+  name: MyString
+  screen_name: MyString
+  verified: false
+
+two:
+  twitter_id: 1
+  twitter_id_str: MyString
+  name: MyString
+  screen_name: MyString
+  verified: false
