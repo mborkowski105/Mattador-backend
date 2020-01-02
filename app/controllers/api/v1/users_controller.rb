@@ -13,4 +13,12 @@ class Api::V1::UsersController < ApplicationController
         user_json = UserSerializer.new(user).serialized_json
         render json:user_json, status: 200
     end
+
+    def create
+        user = User.find_or_create_by(user_params)
+    end
+
+    def user_params
+        params.require(:user).permit(:username, :password)
+    end
 end

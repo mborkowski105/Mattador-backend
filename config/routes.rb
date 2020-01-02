@@ -6,7 +6,7 @@ Rails.application.routes.draw do
       resources :twitter_users, only: [:index]
       get "twitter_users/:id/tweets", to: "twitter_users#show_tweets"
 
-      resources :users, only: [:index, :show]
+      resources :users, only: [:index, :show, :create]
     end
   end
   # For details on the DSL available within this file, see https://guides.rubyonrails.org/routing.html
