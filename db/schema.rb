@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 2020_01_02_132938) do
+ActiveRecord::Schema.define(version: 2020_01_10_164120) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -27,13 +27,18 @@ ActiveRecord::Schema.define(version: 2020_01_02_132938) do
     t.integer "twitter_id"
     t.string "twitter_id_str"
     t.string "text"
-    t.integer "twitter_user_id"
     t.datetime "created_at", precision: 6, null: false
     t.datetime "updated_at", precision: 6, null: false
     t.string "entities"
     t.string "hashtags"
     t.string "media"
     t.string "media_url"
+    t.integer "twitter_user_id"
+    t.string "twitter_user_id_str"
+    t.string "twitter_user_name"
+    t.string "twitter_user_screen_name"
+    t.string "twitter_user_description"
+    t.string "twitter_user_profile_image_url"
   end
 
   create_table "twitter_users", force: :cascade do |t|

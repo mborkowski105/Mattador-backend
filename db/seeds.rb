@@ -9,6 +9,9 @@
 require 'oauth'
 require 'json'
 require 'byebug'
+require "google/cloud/language"
+
+# twitter stuff below
 
 CONSUMER_KEY = 'VKxuVzTfght5w6O5S6AWUpTMb'
 CONSUMER_SECRET = 'qCDq9iM1iuDSQAEkV9HVJKSR6r3ShQJK1nAtybOtcwkSoaGMDq'
@@ -24,30 +27,42 @@ access_token = OAuth::AccessToken.from_hash(consumer, token_hash)
 
 tweets = JSON.parse(access_token.request(:get, "#{BASE_URI}statuses/home_timeline.json").body)
 
-cnn = TwitterUser.create_or_find_by(twitter_id: 428333, twitter_id_str: "428333", name: "CNN Breaking News", screen_name:"cnnbrk", profile_image_url:"http://pbs.twimg.com/profile_images/925092227667304448/fAY1HUu3_normal.jpg",verified: true)
-ap = TwitterUser.create_or_find_by(twitter_id: 51241574, twitter_id_str: "51241574", name: "The Associated Press", screen_name:"AP", profile_image_url:"http://pbs.twimg.com/profile_images/461964160838803457/8z9FImcv_normal.png",verified: true)
-nytimes = TwitterUser.create_or_find_by(twitter_id: 807095, twitter_id_str: "807095", name: "The New York Times", screen_name:"nytimes", profile_image_url:"http://pbs.twimg.com/profile_images/1098244578472280064/gjkVMelR_normal.png",verified: true)
-arstech = TwitterUser.create_or_find_by(twitter_id: 717313, twitter_id_str: "717313", name: "Ars Technica", screen_name:"arstechnica", profile_image_url:"http://pbs.twimg.com/profile_images/2215576731/ars-logo_normal.png",verified: true)
-wsj = TwitterUser.create_or_find_by(twitter_id: 3108351, twitter_id_str: "3108351", name: "The Wall Street Journal", screen_name:"WSJ", profile_image_url:"http://pbs.twimg.com/profile_images/971415515754266624/zCX0q9d5_normal.jpg",verified: true)
-nyweather = TwitterUser.create_or_find_by(twitter_id: 43435902, twitter_id_str: "43435902", name: "NY1 Weather", screen_name:"NY1weather", profile_image_url:"http://pbs.twimg.com/profile_images/959067130/NY1_Twit_Weather_Icon_normal.jpg",verified: true)
-npr = TwitterUser.create_or_find_by(twitter_id: 5392522, twitter_id_str: "5392522", name: "NPR", screen_name:"NPR", profile_image_url:"http://pbs.twimg.com/profile_images/1208165423109292032/_oEEIsvx_normal.jpg",verified: true)
-natgeo = TwitterUser.create_or_find_by(twitter_id: 17471979, twitter_id_str: "17471979", name: "National Geographic", screen_name:"NatGeo", profile_image_url:"https://pbs.twimg.com/profile_images/1053339335217549312/3AsJxV1h_normal.jpg",verified: true)
+# google nlp stuff below
+
+ENV["LANGUAGE_PROJECT"]     = " analog-forest-264118"
+ENV["LANGUAGE_CREDENTIALS"] = "/Users/mborkowski/Downloads/Flatiron Final Project-08bef8cb5c6b.json"
+
+# Instantiates a client
+language = Google::Cloud::Language.new
 
 tweets_result = tweets.each do |tweet|
-    Tweet.create_or_find_by(
-        twitter_created_at: tweet["created_at"],
-        twitter_id: 0, #hard-coded, change later, activerecord couldn't handle huge integer size
-        twitter_id_str: tweet["id_str"],
-        twitter_user_id: TwitterUser.find_by(twitter_id: tweet["user"]["id"]).id,
-        text: tweet["text"],
-        entities: "",
-        hashtags: "",
-        media: "",
-        media_url: ""
-    )
+    response = language.analyze_entities content: tweet["text"], type: :PLAIN_TEXT
+
+    entities = response.entities
+
+    entities.each do |entity|
+        if (entity.type === :LOCATION)
+            puts "success"
+            Tweet.create_or_find_by(
+            twitter_created_at: tweet["created_at"],
+            twitter_id: 0, #hard-coded, change later, activerecord couldn't handle huge integer size
+            twitter_id_str: tweet["id_str"],
+            text: tweet["text"],
+            entities: tweet["user"]["entities"],
+            hashtags: "",
+            media: "",
+            media_url: "",
+            twitter_user_id: tweet["user"]["id"], 
+            twitter_user_id_str: tweet["user"]["id_str"], 
+            twitter_user_name: tweet["user"]["name"], 
+            twitter_user_screen_name: tweet["user"]["screen_name"], 
+            twitter_user_description: tweet["user"]["description"], 
+            twitter_user_profile_image_url: tweet["user"]["profile_image_url"], 
+        )
+        end
+    end
 end
 
-byebug
 
 puts "Hello"
 
