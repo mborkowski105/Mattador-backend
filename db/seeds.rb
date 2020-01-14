@@ -10,6 +10,13 @@ require 'oauth'
 require 'json'
 require 'byebug'
 require "google/cloud/language"
+require "rest-client"
+require "geocoder"
+require "json"
+
+def query_stringify(string)
+    string.gsub!(' ', '+')
+end
 
 # twitter stuff below
 
@@ -25,7 +32,9 @@ consumer = OAuth::Consumer.new(CONSUMER_KEY, CONSUMER_SECRET, { site: 'https://a
 token_hash = { oauth_token: OA_TOKEN, oauth_token_secret: OA_SECRET }
 access_token = OAuth::AccessToken.from_hash(consumer, token_hash)
 
-tweets = JSON.parse(access_token.request(:get, "#{BASE_URI}statuses/home_timeline.json").body)
+#first we get all the tweets from my home timeline with the line of code below
+
+# tweets = JSON.parse(access_token.request(:get, "#{BASE_URI}statuses/home_timeline.json").body)
 
 # google nlp stuff below
 
@@ -35,34 +44,75 @@ ENV["LANGUAGE_CREDENTIALS"] = "/Users/mborkowski/Downloads/Flatiron Final Projec
 # Instantiates a client
 language = Google::Cloud::Language.new
 
-tweets_result = tweets.each do |tweet|
-    response = language.analyze_entities content: tweet["text"], type: :PLAIN_TEXT
 
+#for each tweet, if Google NLP determines it contains a location, the tweet gets saved to my backend
+
+# tweets_result = tweets.each do |tweet|
+#     response = language.analyze_entities content: tweet["text"], type: :PLAIN_TEXT
+
+#     #breaks Google NLP response into chunks, known as entities
+#     entities = response.entities
+
+#     entities.each do |entity|
+#         if (entity.type === :LOCATION)
+#             puts entity.name
+#             # geocode_result = Geocoder.search("#{entity.name} New York")
+#             # if !(geocode_result.empty?)
+#             #     puts entity.name
+#             #     lat = geocode_result[0].data["lat"].to_f
+#             #     long = geocode_result[0].data["long"].to_f
+
+#                 # Tweet.create_or_find_by(
+#                 # twitter_created_at: tweet["created_at"],
+#                 # twitter_id: 0, #hard-coded, change later, activerecord couldn't handle huge integer size
+#                 # twitter_id_str: tweet["id_str"],
+#                 # text: tweet["text"],
+#                 # entities: tweet["user"]["entities"],
+#                 # hashtags: "",
+#                 # media: "",
+#                 # media_url: "",
+#                 # twitter_user_id: tweet["user"]["id"], 
+#                 # twitter_user_id_str: tweet["user"]["id_str"], 
+#                 # twitter_user_name: tweet["user"]["name"], 
+#                 # twitter_user_screen_name: tweet["user"]["screen_name"], 
+#                 # twitter_user_description: tweet["user"]["description"], 
+#                 # twitter_user_profile_image_url: tweet["user"]["profile_image_url"],
+#                 # lat: lat,
+#                 # long: long 
+#                 # )
+#             # end   
+#         end
+#     end
+# end
+
+tweets_result = Tweet.all.each do |tweet|
+    response = language.analyze_entities content: tweet["text"], type: :PLAIN_TEXT
     entities = response.entities
 
+    #collects/concatenates all location entities into single query string with "New York" appended onto the end
+    entity_query_string = ""
     entities.each do |entity|
-        if (entity.type === :LOCATION)
-            puts "success"
-            Tweet.create_or_find_by(
-            twitter_created_at: tweet["created_at"],
-            twitter_id: 0, #hard-coded, change later, activerecord couldn't handle huge integer size
-            twitter_id_str: tweet["id_str"],
-            text: tweet["text"],
-            entities: tweet["user"]["entities"],
-            hashtags: "",
-            media: "",
-            media_url: "",
-            twitter_user_id: tweet["user"]["id"], 
-            twitter_user_id_str: tweet["user"]["id_str"], 
-            twitter_user_name: tweet["user"]["name"], 
-            twitter_user_screen_name: tweet["user"]["screen_name"], 
-            twitter_user_description: tweet["user"]["description"], 
-            twitter_user_profile_image_url: tweet["user"]["profile_image_url"], 
-        )
+        ##blacklists entities that are literally named "location"
+        if (entity.type === :LOCATION && !(entity.name === "location"))
+            # RestClient.get "https://maps.googleapis.com/maps/api/geocode/json?address=11+Broadway+Manhattan&key=AIzaSyCopQ2UMpO6wvj0qDZd77fbUvSjMOor3Ns"
+            entity_query_string.concat(" #{entity.name}")
         end
     end
+
+    #removes "&" if it appears in text, appends "New York" onto end
+    entity_query_string.gsub!('&', '')
+    entity_query_string.concat(" New York")
+    query_stringify(entity_query_string)
+    entity_query_string
+    geocoder = JSON.parse(RestClient.get("https://maps.googleapis.com/maps/api/geocode/json?address=#{entity_query_string}&key=AIzaSyCopQ2UMpO6wvj0qDZd77fbUvSjMOor3Ns"))
+    lat = geocoder["results"][0]["geometry"]["location"]["lat"].to_s
+    long = geocoder["results"][0]["geometry"]["location"]["lng"].to_s
+    puts lat
+    puts long
+    tweet.update({lat: lat, long: long})
 end
 
+pp tweets_result
 
 puts "Hello"
 

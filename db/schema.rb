@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 2020_01_10_164120) do
+ActiveRecord::Schema.define(version: 2020_01_14_193247) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -39,6 +39,8 @@ ActiveRecord::Schema.define(version: 2020_01_10_164120) do
     t.string "twitter_user_screen_name"
     t.string "twitter_user_description"
     t.string "twitter_user_profile_image_url"
+    t.string "lat"
+    t.string "long"
   end
 
   create_table "twitter_users", force: :cascade do |t|
